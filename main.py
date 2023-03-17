@@ -89,6 +89,8 @@ class Main(QMainWindow):
 
 
 def main():
+    if not UserData.checkIfSaveExists():
+        UserData.generateEmptySave()
     app = QApplication(sys.argv)
     win = Main()
     win.show()
