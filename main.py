@@ -77,6 +77,25 @@ class Main(QMainWindow):
         self.stackedWidget.setCurrentIndex(0)
         self.setCentralWidget(self.stackedWidget)
 
+    def __copytree(self, src, dst, symlinks=False, ignore=None):
+        for item in os.listdir(src):
+            s = os.path.join(src, item)
+            d = os.path.join(dst, item)
+            if os.path.isdir(s):
+                shutil.copytree(s, d, symlinks, ignore)
+            else:
+                shutil.copy2(s, d)
+                logging.info(f"Copied file {s}")
+
+    def __cleartree(self, folder):
+        for filename in os.listdir(folder):
+            file_path = os.path.join(folder, filename)
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+                logging.info(f"Deleted file {file_path}")
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+                logging.info(f"Deleted folder {file_path}")
 
     def __fromButtonClicked(self):
         self.from_destination = QFileDialog.getExistingDirectory()
@@ -103,17 +122,13 @@ class Main(QMainWindow):
             UserData.changeSaveData(to_path=self.to_destination)
 
     def __copyProcess(self):
-        self.from_destination = self.save_data["from_folder"]
+        self.from_destination = self.from_line.text()
         self.to_destination = self.to_line.text()
         self.from_destination = os.path.join(self.from_destination, self.from_choose_list.currentText())
+        UserData.changeSaveData(from_path=self.from_line.text(), to_path=self.to_destination)
         try:
-            for f in os.listdir(self.to_destination):
-                os.remove(os.path.join(self.to_destination, f))
-                logging.info(f"Deleted file {self.to_destination}/{f}")
-            for f in os.listdir(self.from_destination):
-                shutil.copy(os.path.join(self.from_destination, f), os.path.join(self.to_destination, f))
-                logging.info(f"Copied file {f}")
-            UserData.changeSaveData(from_path=self.save_data["from_folder"], to_path=self.save_data["to_folder"])
+            self.__cleartree(self.to_destination)
+            self.__copytree(self.from_destination, self.to_destination)
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", str(e), QMessageBox.Ok)
             logging.error(f"Error: {str(e)}")
